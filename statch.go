@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	_ "strconv"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,7 @@ func help() {
 }
 
 // start is a function that starts a new insert for given label.
-//IDEA: // If any previous insert was still open for given label, then that insert get's a closed value.
+// IDEA: // If any previous insert was still open for given label, then that insert get's a closed value.
 func start(label string) {
 	srt := time.Now()
 	line := fmt.Sprintf("%v,%v,%v,%v\n", label, srt.Unix(), "", "")
@@ -45,10 +46,12 @@ func start(label string) {
 }
 
 // logged is a function that CURRENTLY prints the contents of the logfile.
-func logged(label string, printing bool) {
+func logged(label string, printing bool) ([]statch, int) {
+	var statches []statch
+	var fstOpen int = -1
 	if _, err := os.Stat(logfile); err != nil {
 		fmt.Println("Nothing logged yet")
-		return
+		return statches, fstOpen
 	}
 	f, err := os.Open(logfile)
 	defer f.Close()
@@ -61,11 +64,44 @@ func logged(label string, printing bool) {
 			log.Fatal(err)
 		}
 	}()
+	var i int
 	for scanner.Scan() {
-		if printing {
-			fmt.Println(scanner.Text())
+		contents := strings.Split(scanner.Text(), ",")
+		if contents[0] != label {
+			continue
 		}
+		srt, err := strconv.ParseInt(contents[1], 10, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		srtTime := time.Unix(srt, 0)
+		var endTime time.Time
+		var duration time.Duration
+		if contents[2] != "" {
+			if fstOpen == -1 {
+				fstOpen = i
+			}
+			end, err := strconv.ParseInt(contents[2], 10, 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			endTime = time.Unix(end, 0)
+			duration = endTime.Sub(srtTime)
+		}
+		st := statch{contents[0], srtTime, endTime, duration}
+		statches = append(statches, st)
+		if printing {
+			fmt.Println(st.label, st.start, st.end, st.duration)
+		}
+		i++
 	}
+	fmt.Println(statches)
+	return statches, fstOpen
+}
+
+// TODO:
+func end(label string) {
+	return
 }
 
 func main() {
@@ -73,13 +109,17 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	// 	var statches []statch
 	switch action := os.Args[flag.NFlag()+1]; action {
 	case "help":
 		help()
 	case "start":
 		start(*labelFlag)
 	case "logged":
-		logged(*labelFlag, true)
+		_, _ = logged(*labelFlag, true)
+	//case "end":
+	//	statches, openInd = logged(*labelFlag, false)
+	//	end(*labelFlag, openInd)
 	default:
 		log.Fatal("Not defined")
 	}
