@@ -10,10 +10,12 @@ import (
 	"time"
 )
 
+// NOTE: only one open label at a time is allowed
+
 // logfile is a variable that holds the log file path.
 // structure of the file: label start end
 var logfile string = ".trakr.csv"
-var label string = "general"
+var label string = "all"
 var compare time.Time
 
 // trak is a structure that holds each logged item's label, start, end and duration.
@@ -60,7 +62,7 @@ func logged(label string) ([]trak, int) {
 			endTime = time.Unix(end, 0)
 			duration = endTime.Sub(srtTime)
 		}
-		if openLabel == -1 && contents[2] == "" && label == contents[0] {
+		if openLabel == -1 && contents[2] == "" {
 			openLabel = i
 		}
 		traks = append(traks, trak{contents[0], srtTime, endTime, duration})
@@ -129,16 +131,17 @@ func main() {
 		}
 		fmt.Printf("%-10v %-30v %-30v %5v\n", "label", "start", "end", "duration")
 		for _, elem := range traks {
-			if label == "all" || (label == "open" && elem.end == compare) || elem.label == label {
+			if label == "all" || elem.label == label {
 				fmt.Printf("%-10v %-30v %-30v %5v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
 			}
 		}
 	case "start":
-		if label == "open" {
-			log.Fatal("Label 'open' not allowed")
-		}
 		start(label, &traks, openLabel)
 	case "end":
+		if openLabel == -1 {
+			fmt.Println("No trak to close")
+			return
+		}
 		end(&traks, openLabel)
 	case "summary":
 		log.Fatal("TODO:")
