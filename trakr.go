@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// TODO: documentation
 // NOTE: only one open label at a time is allowed
 
 // logfile is a variable that holds the log file path.
@@ -24,6 +25,21 @@ type trak struct {
 	start    time.Time
 	end      time.Time
 	duration time.Duration
+}
+
+func (t trak) Store() string {
+	var saveEnd string
+	if t.end != compare {
+		saveEnd = strconv.FormatInt(t.end.Unix(), 10)
+	}
+	return fmt.Sprintf("%v,%v,%v\n", t.label, t.start.Unix(), saveEnd)
+}
+
+var format string = "%-10v %-30v %-30v %5v"
+var header string = fmt.Sprintf(format, "label", "start", "end", "duration")
+
+func (t trak) String() string {
+	return fmt.Sprintf(format, t.label, t.start.String(), t.end.String(), t.duration)
 }
 
 // logged is a function that reads and parses the contents of the logfile.
@@ -83,12 +99,7 @@ func save(traks *[]trak) {
 		log.Fatal(err)
 	}
 	for _, elem := range *traks {
-		var saveEnd string
-		if elem.end != compare {
-			saveEnd = strconv.FormatInt(elem.end.Unix(), 10)
-		}
-		line := fmt.Sprintf("%v,%v,%v\n", elem.label, elem.start.Unix(), saveEnd)
-		_, err = f.WriteString(line)
+		_, err = f.WriteString(elem.Store())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -102,7 +113,8 @@ func end(traks *[]trak, openLabel int) {
 		cur.end = time.Now()
 		cur.duration = cur.end.Sub(cur.start)
 		(*traks)[openLabel] = cur
-		fmt.Printf("Added end time '%v' to label '%v' with start time '%v'.\n", cur.end.String(), cur.label, cur.start.String())
+		fmt.Printf("Closed '%v'\n", cur.label)
+
 	}
 	save(traks)
 }
@@ -111,11 +123,11 @@ func end(traks *[]trak, openLabel int) {
 // If any previous insert was still open for given label, then that insert gets closed.
 func start(label string, traks *[]trak, openLabel int) {
 	*traks = append(*traks, trak{label, time.Now(), compare, time.Duration(0)})
-	fmt.Printf("Added start time '%v' to label '%v'.\n", time.Now(), label)
 	end(traks, openLabel)
+	fmt.Printf("Started '%v'\n", label)
 }
 
-// trakr [action] [subaction|label]
+// trakr [action] (label)
 
 func main() {
 	if len(os.Args) > 2 {
@@ -128,11 +140,12 @@ func main() {
 	case "show":
 		if len(traks) == 0 {
 			fmt.Println("Nothing logged yet")
+			return
 		}
-		fmt.Printf("%-10v %-30v %-30v %5v\n", "label", "start", "end", "duration")
+		fmt.Println(header)
 		for _, elem := range traks {
 			if label == "all" || elem.label == label {
-				fmt.Printf("%-10v %-30v %-30v %5v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
+				fmt.Println(elem.String())
 			}
 		}
 	case "start":
