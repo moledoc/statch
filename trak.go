@@ -13,10 +13,10 @@ import (
 
 // logfile is a variable that holds the log file path.
 // structure of the file: label start end
-var logfile string = "./.statch.csv"
+var logfile string = ".trak.csv"
 
-// statch is a structure that holds each logged item's label, start, end and duration.
-type statch struct {
+// trak is a structure that holds each logged item's label, start, end and duration.
+type trak struct {
 	label    string
 	start    time.Time
 	end      time.Time
@@ -32,7 +32,7 @@ func help() {
 // IDEA: // If any previous insert was still open for given label, then that insert get's a closed value.
 func start(label string) {
 	srt := time.Now()
-	line := fmt.Sprintf("%v,%v,%v,%v\n", label, srt.Unix(), "", "")
+	line := fmt.Sprintf("%v,%v,%v\n", label, srt.Unix(), "")
 	f, err := os.OpenFile(logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	defer f.Close()
 	if err != nil {
@@ -46,12 +46,11 @@ func start(label string) {
 }
 
 // logged is a function that reads and parses the contents of the logfile.
-func logged(label string) ([]statch, int) {
-	var statches []statch
-	var fstOpen int = -1
+func logged(label string) ([]trak, int) {
+	var traks []trak
+	var openLabel int = -1
 	if _, err := os.Stat(logfile); err != nil {
-		fmt.Println("Nothing logged yet")
-		return statches, fstOpen
+		return traks, openLabel
 	}
 	f, err := os.Open(logfile)
 	defer f.Close()
@@ -75,9 +74,6 @@ func logged(label string) ([]statch, int) {
 		var endTime time.Time
 		var duration time.Duration
 		if contents[2] != "" {
-			if fstOpen == -1 && label == contents[0] {
-				fstOpen = i
-			}
 			end, err := strconv.ParseInt(contents[2], 10, 64)
 			if err != nil {
 				log.Fatal(err)
@@ -85,39 +81,65 @@ func logged(label string) ([]statch, int) {
 			endTime = time.Unix(end, 0)
 			duration = endTime.Sub(srtTime)
 		}
-		statches = append(statches, statch{contents[0], srtTime, endTime, duration})
+		if openLabel == -1 && contents[2] == "" && label == contents[0] {
+			openLabel = i
+		}
+		traks = append(traks, trak{contents[0], srtTime, endTime, duration})
 		i++
 	}
-	fmt.Println(statches)
-	return statches, fstOpen
+	return traks, openLabel
 }
 
-// TODO:
-func end(label string) {
-	return
+// end is a function that closes the last opened insert for corresponding label.
+func end(traks *[]trak, openLabel int) {
+	cur := (*traks)[openLabel]
+	cur.end = time.Now()
+	cur.duration = cur.end.Sub(cur.start)
+	(*traks)[openLabel] = cur
+	fmt.Printf("Added end time '%v' to label '%v' with start time '%v'.\n", cur.end.String(), cur.label, cur.start.String())
+
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_TRUNC, 0600)
+	defer f.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var compare time.Time
+	for _, elem := range *traks {
+		var saveEnd string
+		if elem.end != compare {
+			saveEnd = strconv.FormatInt(elem.end.Unix(), 10)
+		}
+		line := fmt.Sprintf("%v,%v,%v\n", elem.label, elem.start.Unix(), saveEnd)
+		_, err = f.WriteString(line)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func main() {
 	labelFlag := flag.String("label", "general", "Label of saved time")
+	showAll := flag.Bool("all", false, "Show all trak inserts")
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	statches, fstOpen := logged(*labelFlag)
-	fmt.Println(fstOpen)
+	traks, openLabel := logged(*labelFlag)
 	switch action := os.Args[flag.NFlag()+1]; action {
 	case "help":
 		help()
 	case "start":
 		start(*labelFlag)
 	case "show":
-		for _, elem := range statches {
-			if elem.label == *labelFlag {
-				fmt.Printf("%-10v %v %v %v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
+		if len(traks) == 0 {
+			fmt.Println("Nothing logged yet")
+		}
+		for _, elem := range traks {
+			if (*showAll) || elem.label == *labelFlag {
+				fmt.Printf("%-10v %-30v %-30v %5v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
 			}
 		}
-	//case "end":
-	//	statches, openInd = logged(*labelFlag, false)
-	//	end(*labelFlag, openInd)
+	case "end":
+		end(&traks, openLabel)
 	default:
 		log.Fatal("Not defined")
 	}
