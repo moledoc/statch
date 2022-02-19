@@ -110,25 +110,35 @@ func save(traks *[]trak) {
 func end(traks *[]trak, openLabel int) {
 	if openLabel != -1 {
 		cur := (*traks)[openLabel]
-		cur.end = time.Now()
+		cur.end = time.Unix(time.Now().Unix(), 0)
 		cur.duration = cur.end.Sub(cur.start)
 		(*traks)[openLabel] = cur
 		fmt.Printf("Closed '%v'\n", cur.label)
 
 	}
 	save(traks)
+	printer(traks, len(*traks)-5)
 }
 
 // start is a function that starts a new insert for given label.
 // If any previous insert was still open for given label, then that insert gets closed.
 func start(label string, traks *[]trak, openLabel int) {
-	*traks = append(*traks, trak{label, time.Now(), compare, time.Duration(0)})
+	*traks = append(*traks, trak{label, time.Unix(time.Now().Unix(), 0), compare, time.Duration(0)})
 	end(traks, openLabel)
 	fmt.Printf("Started '%v'\n", label)
 }
 
-// trakr [action] (label)
+func printer(traks *[]trak, begInd int) {
+	fmt.Println(header)
+	for i := begInd; i < len(*traks); i++ {
+		// 		for _, elem := range traks {
+		if label == "all" || (*traks)[i].label == label {
+			fmt.Println((*traks)[i].String())
+		}
+	}
+}
 
+// trakr [action] (label)
 func main() {
 	if len(os.Args) > 2 {
 		label = os.Args[2]
@@ -142,12 +152,13 @@ func main() {
 			fmt.Println("Nothing logged yet")
 			return
 		}
-		fmt.Println(header)
-		for _, elem := range traks {
-			if label == "all" || elem.label == label {
-				fmt.Println(elem.String())
-			}
-		}
+		printer(&traks, 0)
+		// 		fmt.Println(header)
+		// 		for _, elem := range traks {
+		// 			if label == "all" || elem.label == label {
+		// 				fmt.Println(elem.String())
+		// 			}
+		// 		}
 	case "start":
 		start(label, &traks, openLabel)
 	case "end":
