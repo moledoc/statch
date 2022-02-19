@@ -1,3 +1,3 @@
-module github.com/moledoc/trak
+module github.com/moledoc/trakr
 
 go 1.16

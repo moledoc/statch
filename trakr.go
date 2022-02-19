@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -13,7 +12,9 @@ import (
 
 // logfile is a variable that holds the log file path.
 // structure of the file: label start end
-var logfile string = ".trak.csv"
+var logfile string = ".trakr.csv"
+var label string = "general"
+var compare time.Time
 
 // trak is a structure that holds each logged item's label, start, end and duration.
 type trak struct {
@@ -103,7 +104,6 @@ func end(traks *[]trak, openLabel int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var compare time.Time
 	for _, elem := range *traks {
 		var saveEnd string
 		if elem.end != compare {
@@ -117,30 +117,34 @@ func end(traks *[]trak, openLabel int) {
 	}
 }
 
-func main() {
-	labelFlag := flag.String("label", "general", "Label of saved time")
-	showAll := flag.Bool("all", false, "Show all trak inserts")
-	flag.Parse()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+// trakr [action] [subaction|label]
 
-	traks, openLabel := logged(*labelFlag)
-	switch action := os.Args[flag.NFlag()+1]; action {
+func main() {
+	if len(os.Args) > 2 {
+		label = os.Args[2]
+	}
+	traks, openLabel := logged(label)
+	switch os.Args[1] {
 	case "help":
 		help()
 	case "start":
-		start(*labelFlag)
+		if label == "open" {
+			log.Fatal("Label 'open' not allowed")
+		}
+		start(label)
 	case "show":
 		if len(traks) == 0 {
 			fmt.Println("Nothing logged yet")
 		}
 		for _, elem := range traks {
-			if (*showAll) || elem.label == *labelFlag {
+			if label == "all" || (label == "open" && elem.end == compare) || elem.label == label {
 				fmt.Printf("%-10v %-30v %-30v %5v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
 			}
 		}
 	case "end":
 		end(&traks, openLabel)
 	default:
-		log.Fatal("Not defined")
+		fmt.Println("Unknown action")
+		help()
 	}
 }
