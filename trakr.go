@@ -127,6 +127,7 @@ func main() {
 		if len(traks) == 0 {
 			fmt.Println("Nothing logged yet")
 		}
+		fmt.Printf("%-10v %-30v %-30v %5v\n", "label", "start", "end", "duration")
 		for _, elem := range traks {
 			if label == "all" || (label == "open" && elem.end == compare) || elem.label == label {
 				fmt.Printf("%-10v %-30v %-30v %5v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
@@ -145,5 +146,5 @@ func main() {
 		fmt.Println("Unknown action")
 		help()
 	}
-	fmt.Println("DONE")
+	fmt.Printf("--------------------------------------------------------------------------------\nDONE\n")
 }
