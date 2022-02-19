@@ -12,7 +12,7 @@ import (
 )
 
 // logfile is a variable that holds the log file path.
-// structure of the file: label start end duration
+// structure of the file: label start end
 var logfile string = "./.statch.csv"
 
 // statch is a structure that holds each logged item's label, start, end and duration.
@@ -45,8 +45,8 @@ func start(label string) {
 	fmt.Printf("Added start time '%v' to label '%v'.\n", srt.String(), label)
 }
 
-// logged is a function that CURRENTLY prints the contents of the logfile.
-func logged(label string, printing bool) ([]statch, int) {
+// logged is a function that reads and parses the contents of the logfile.
+func logged(label string) ([]statch, int) {
 	var statches []statch
 	var fstOpen int = -1
 	if _, err := os.Stat(logfile); err != nil {
@@ -67,9 +67,6 @@ func logged(label string, printing bool) ([]statch, int) {
 	var i int
 	for scanner.Scan() {
 		contents := strings.Split(scanner.Text(), ",")
-		if contents[0] != label {
-			continue
-		}
 		srt, err := strconv.ParseInt(contents[1], 10, 64)
 		if err != nil {
 			log.Fatal(err)
@@ -78,7 +75,7 @@ func logged(label string, printing bool) ([]statch, int) {
 		var endTime time.Time
 		var duration time.Duration
 		if contents[2] != "" {
-			if fstOpen == -1 {
+			if fstOpen == -1 && label == contents[0] {
 				fstOpen = i
 			}
 			end, err := strconv.ParseInt(contents[2], 10, 64)
@@ -88,11 +85,7 @@ func logged(label string, printing bool) ([]statch, int) {
 			endTime = time.Unix(end, 0)
 			duration = endTime.Sub(srtTime)
 		}
-		st := statch{contents[0], srtTime, endTime, duration}
-		statches = append(statches, st)
-		if printing {
-			fmt.Println(st.label, st.start, st.end, st.duration)
-		}
+		statches = append(statches, statch{contents[0], srtTime, endTime, duration})
 		i++
 	}
 	fmt.Println(statches)
@@ -109,14 +102,19 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// 	var statches []statch
+	statches, fstOpen := logged(*labelFlag)
+	fmt.Println(fstOpen)
 	switch action := os.Args[flag.NFlag()+1]; action {
 	case "help":
 		help()
 	case "start":
 		start(*labelFlag)
-	case "logged":
-		_, _ = logged(*labelFlag, true)
+	case "show":
+		for _, elem := range statches {
+			if elem.label == *labelFlag {
+				fmt.Printf("%-10v %v %v %v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
+			}
+		}
 	//case "end":
 	//	statches, openInd = logged(*labelFlag, false)
 	//	end(*labelFlag, openInd)
