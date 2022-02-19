@@ -24,28 +24,6 @@ type trak struct {
 	duration time.Duration
 }
 
-// help is a function that prints help.
-func help() {
-	fmt.Println("TODO:")
-}
-
-// start is a function that starts a new insert for given label.
-// IDEA: // If any previous insert was still open for given label, then that insert get's a closed value.
-func start(label string) {
-	srt := time.Now()
-	line := fmt.Sprintf("%v,%v,%v\n", label, srt.Unix(), "")
-	f, err := os.OpenFile(logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	defer f.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = f.WriteString(line)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Added start time '%v' to label '%v'.\n", srt.String(), label)
-}
-
 // logged is a function that reads and parses the contents of the logfile.
 func logged(label string) ([]trak, int) {
 	var traks []trak
@@ -91,14 +69,12 @@ func logged(label string) ([]trak, int) {
 	return traks, openLabel
 }
 
-// end is a function that closes the last opened insert for corresponding label.
-func end(traks *[]trak, openLabel int) {
-	cur := (*traks)[openLabel]
-	cur.end = time.Now()
-	cur.duration = cur.end.Sub(cur.start)
-	(*traks)[openLabel] = cur
-	fmt.Printf("Added end time '%v' to label '%v' with start time '%v'.\n", cur.end.String(), cur.label, cur.start.String())
+// help is a function that prints help.
+func help() {
+	fmt.Println("TODO:")
+}
 
+func save(traks *[]trak) {
 	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_TRUNC, 0600)
 	defer f.Close()
 	if err != nil {
@@ -117,6 +93,26 @@ func end(traks *[]trak, openLabel int) {
 	}
 }
 
+// end is a function that closes the last opened insert for corresponding label.
+func end(traks *[]trak, openLabel int) {
+	if openLabel != -1 {
+		cur := (*traks)[openLabel]
+		cur.end = time.Now()
+		cur.duration = cur.end.Sub(cur.start)
+		(*traks)[openLabel] = cur
+		fmt.Printf("Added end time '%v' to label '%v' with start time '%v'.\n", cur.end.String(), cur.label, cur.start.String())
+	}
+	save(traks)
+}
+
+// start is a function that starts a new insert for given label.
+// If any previous insert was still open for given label, then that insert gets closed.
+func start(label string, traks *[]trak, openLabel int) {
+	*traks = append(*traks, trak{label, time.Now(), compare, time.Duration(0)})
+	fmt.Printf("Added start time '%v' to label '%v'.\n", time.Now(), label)
+	end(traks, openLabel)
+}
+
 // trakr [action] [subaction|label]
 
 func main() {
@@ -127,11 +123,6 @@ func main() {
 	switch os.Args[1] {
 	case "help":
 		help()
-	case "start":
-		if label == "open" {
-			log.Fatal("Label 'open' not allowed")
-		}
-		start(label)
 	case "show":
 		if len(traks) == 0 {
 			fmt.Println("Nothing logged yet")
@@ -141,10 +132,18 @@ func main() {
 				fmt.Printf("%-10v %-30v %-30v %5v\n", elem.label, elem.start.String(), elem.end.String(), elem.duration)
 			}
 		}
+	case "start":
+		if label == "open" {
+			log.Fatal("Label 'open' not allowed")
+		}
+		start(label, &traks, openLabel)
 	case "end":
 		end(&traks, openLabel)
+	case "summary":
+		log.Fatal("TODO:")
 	default:
 		fmt.Println("Unknown action")
 		help()
 	}
+	fmt.Println("DONE")
 }
