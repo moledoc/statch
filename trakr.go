@@ -10,13 +10,18 @@ import (
 	"time"
 )
 
-// TODO: documentation
+// TODO: improve documentation
 // NOTE: only one open label at a time is allowed
 
 // logfile is a variable that holds the log file path.
 // structure of the file: label start end
 var logfile string = ".trakr.csv"
+
+// label is a variable that holds the label value for trak
+// Default trak label value is 'all'.
 var label string = "all"
+
+// compare is the default value of time.Time and is used to check if trak end is set or not.
 var compare time.Time
 
 // trak is a structure that holds each logged item's label, start, end and duration.
@@ -27,6 +32,7 @@ type trak struct {
 	duration time.Duration
 }
 
+// Store is a method that formats trak into defined storing format.
 func (t trak) Store() string {
 	var saveEnd string
 	if t.end != compare {
@@ -35,9 +41,13 @@ func (t trak) Store() string {
 	return fmt.Sprintf("%v,%v,%v\n", t.label, t.start.Unix(), saveEnd)
 }
 
+// format is a variable that defines the trak printing format.
 var format string = "%-10v %-30v %-30v %5v"
+
+// header is a variable that contains the header labels for printing traks.
 var header string = fmt.Sprintf(format, "label", "start", "end", "duration")
 
+// String is a method that prints trak to human readable format.
 func (t trak) String() string {
 	return fmt.Sprintf(format, t.label, t.start.String(), t.end.String(), t.duration)
 }
@@ -92,6 +102,7 @@ func help() {
 	fmt.Println("TODO:")
 }
 
+// save is a function that writes traks to the logfile.
 func save(traks *[]trak) {
 	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_TRUNC, 0600)
 	defer f.Close()
@@ -128,6 +139,7 @@ func start(label string, traks *[]trak, openLabel int) {
 	fmt.Printf("Started '%v'\n", label)
 }
 
+// printer is a function that prints traks in human readable format.
 func printer(traks *[]trak, begInd int) {
 	fmt.Println(header)
 	for i := begInd; i < len(*traks); i++ {
@@ -153,12 +165,6 @@ func main() {
 			return
 		}
 		printer(&traks, 0)
-		// 		fmt.Println(header)
-		// 		for _, elem := range traks {
-		// 			if label == "all" || elem.label == label {
-		// 				fmt.Println(elem.String())
-		// 			}
-		// 		}
 	case "start":
 		start(label, &traks, openLabel)
 	case "end":
