@@ -150,6 +150,10 @@ func printer(traks *[]trak, begInd int) {
 	}
 }
 
+func summary(traks *[]trak) {
+	fmt.Println("TODO:")
+}
+
 // trakr [action] (label)
 func main() {
 	if len(os.Args) > 2 {
