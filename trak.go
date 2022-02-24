@@ -6,12 +6,14 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
 // TODO: improve documentation
+// TODO: refactor variable/function names
 // NOTE: only one open label at a time is allowed
 
 // logfile is a variable that holds the log file path.
@@ -43,7 +45,7 @@ func (t trak) Store() string {
 }
 
 // format is a variable that defines the trak printing format.
-var format string = "%-10v %-30v %-30v %5v"
+var format string = "%-10v %-30v %-30v %10v"
 
 // header is a variable that contains the header labels for printing traks.
 var header string = fmt.Sprintf(format, "label", "start", "end", "duration")
@@ -163,6 +165,33 @@ type sumry struct {
 	duration time.Duration
 }
 
+var re *regexp.Regexp = regexp.MustCompile(fmt.Sprintf("_%v$", label))
+
+func mapKeys(s map[string]sumry) []string {
+	keys := make([]string, len(s))
+	var i int
+	for k := range s {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func sumryPrinter(s map[string]sumry, f string) {
+	keys := mapKeys(s)
+	// 	fmt.Printf("------------------------------------------------\n%v\n", t)
+	fmt.Println("------------------------------------------------")
+	fmt.Printf("%-10v %-10v %10v\n", "label", f, "duration")
+	for _, k := range keys {
+		if label != "all" && !re.MatchString(k) {
+			continue
+		}
+		v := s[k]
+		fmt.Printf("%-10v %-10v %10v\n", v.label, v.readable, v.duration)
+	}
+}
+
 func summary(traks *[]trak, label string) {
 	daily := make(map[string]sumry)
 	monthly := make(map[string]sumry)
@@ -175,53 +204,30 @@ func summary(traks *[]trak, label string) {
 		weekId := fmt.Sprintf("%v_%v", y*100+w, elem.label)
 
 		if day, ok := daily[dayId]; !ok {
-			daily[dayId] = sumry{elem.label, fmt.Sprintf("%04d-%02d-%02d", y, int(m), d), elem.duration}
+			daily[dayId] = sumry{elem.label, fmt.Sprintf("%v-%02d-%02d", y, int(m), d), elem.duration}
 		} else {
 			day.duration += elem.duration
 			daily[dayId] = day
 		}
 
 		if month, ok := monthly[monthId]; !ok {
-			monthly[monthId] = sumry{elem.label, fmt.Sprintf("%04d-%02d", y, int(m)), elem.duration}
+			monthly[monthId] = sumry{elem.label, fmt.Sprintf("%v-%02d", y, int(m)), elem.duration}
 		} else {
 			month.duration += elem.duration
 			monthly[monthId] = month
 		}
 
 		if week, ok := weekly[weekId]; !ok {
-			weekly[weekId] = sumry{elem.label, fmt.Sprintf("%04d-%02d", y, w), elem.duration}
+			weekly[weekId] = sumry{elem.label, fmt.Sprintf("%v/%v", y, w), elem.duration}
 		} else {
 			week.duration += elem.duration
 			weekly[weekId] = week
 		}
-
-	}
-	re := regexp.MustCompile(fmt.Sprintf("_%v$", label))
-
-	fmt.Println("------------------------------------------------\nMonthly")
-	for k, v := range monthly {
-		if label != "all" && !re.MatchString(k) {
-			continue
-		}
-		fmt.Println(k, v)
 	}
 
-	fmt.Println("------------------------------------------------\nWeekly")
-	for k, v := range weekly {
-		if label != "all" && !re.MatchString(k) {
-			continue
-		}
-		fmt.Println(k, v)
-	}
-
-	fmt.Println("------------------------------------------------\nDaily")
-	for k, v := range daily {
-		if label != "all" && !re.MatchString(k) {
-			continue
-		}
-		fmt.Println(k, v)
-	}
-
+	sumryPrinter(monthly, "yyyy-mm")
+	sumryPrinter(weekly, "yyyy/w")
+	sumryPrinter(daily, "yyyy-mm-dd")
 }
 
 // trakr [action] (label)
@@ -251,7 +257,6 @@ func main() {
 		summary(&traks, label)
 		//log.Fatal("TODO:")
 	default:
-		fmt.Println("Unknown action")
 		help()
 	}
 	fmt.Printf("--------------------------------------------------------------------------------\nDONE\n")
