@@ -45,7 +45,7 @@ func (t trak) Store() string {
 }
 
 // format is a variable that defines the trak printing format.
-var format string = "%-10v %-30v %-30v %10v"
+var format string = "%-10v %-30v %-30v %-10v"
 
 // header is a variable that contains the header labels for printing traks.
 var header string = fmt.Sprintf(format, "label", "start", "end", "duration")
@@ -165,14 +165,14 @@ type sumry struct {
 	duration time.Duration
 }
 
-var re *regexp.Regexp = regexp.MustCompile(fmt.Sprintf("_%v$", label))
-
 func mapKeys(s map[string]sumry) []string {
-	keys := make([]string, len(s))
-	var i int
+	var re *regexp.Regexp = regexp.MustCompile(fmt.Sprintf("_%v$", label))
+	var keys []string
 	for k := range s {
-		keys[i] = k
-		i++
+		if label != "all" && !re.MatchString(k) {
+			continue
+		}
+		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	return keys
@@ -180,15 +180,12 @@ func mapKeys(s map[string]sumry) []string {
 
 func sumryPrinter(s map[string]sumry, f string) {
 	keys := mapKeys(s)
-	// 	fmt.Printf("------------------------------------------------\n%v\n", t)
 	fmt.Println("------------------------------------------------")
-	fmt.Printf("%-10v %-10v %10v\n", "label", f, "duration")
+	fmt.Printf("%-10v %-10v %-10v\n", "label", f, "duration")
+	fmt.Println("---------- ---------- ----------")
 	for _, k := range keys {
-		if label != "all" && !re.MatchString(k) {
-			continue
-		}
 		v := s[k]
-		fmt.Printf("%-10v %-10v %10v\n", v.label, v.readable, v.duration)
+		fmt.Printf("%-10v %-10v %-10v\n", v.label, v.readable, v.duration)
 	}
 }
 
@@ -230,7 +227,7 @@ func summary(traks *[]trak, label string) {
 	sumryPrinter(daily, "yyyy-mm-dd")
 }
 
-// trakr [action] (label)
+// trak [action] (label)
 func main() {
 	if len(os.Args) > 2 {
 		label = os.Args[2]
@@ -259,5 +256,4 @@ func main() {
 	default:
 		help()
 	}
-	fmt.Printf("--------------------------------------------------------------------------------\nDONE\n")
 }
