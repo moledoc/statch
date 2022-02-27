@@ -98,9 +98,20 @@ func logged(label string) ([]trak, int) {
 	return traks, openLabel
 }
 
-// TODO: help is a function that prints help.
+// help is a function that prints help.
+// TODO:
 func help() {
-	fmt.Println("TODO:")
+	fmt.Println("Summary:")
+	fmt.Println("\ttrak is a program that tracks time. NOTE: only one track can be opened at any given time")
+	fmt.Println("\nUsage:")
+	fmt.Println("\ttrak ACTION [LABEL]")
+	fmt.Println("\nACTION:")
+	fmt.Println("\tstart\tStarts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed")
+	fmt.Println("\tend\tTODO:")
+	fmt.Println("\tshow\tTODO:")
+	fmt.Println("\tsummary\tTODO:")
+	fmt.Println("\nLABEL:")
+	fmt.Println("\tBy default, label 'all' is used. However, user can specify custom label after ACTION. However, only the first given label is used.")
 }
 
 // save is a function that writes traks to the logfile.
@@ -231,6 +242,10 @@ func main() {
 		label = os.Args[2]
 	}
 	traks, openLabel := logged(label)
+	if len(os.Args) == 1 {
+		help()
+		return
+	}
 	switch os.Args[1] {
 	case "help":
 		help()
