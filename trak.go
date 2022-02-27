@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-// TODO: improve documentation
-// TODO: refactor variable/function names
 // NOTE: only one open label at a time is allowed
 
 // logfile is a variable that holds the log file path.
@@ -35,8 +33,8 @@ type trak struct {
 	duration time.Duration
 }
 
-// Store is a method that formats trak into defined storing format.
-func (t trak) Store() string {
+// store is a method that formats trak into defined storing format.
+func (t trak) store() string {
 	var saveEnd string
 	if t.end != compare {
 		saveEnd = strconv.FormatInt(t.end.Unix(), 10)
@@ -100,7 +98,7 @@ func logged(label string) ([]trak, int) {
 	return traks, openLabel
 }
 
-// help is a function that prints help.
+// TODO: help is a function that prints help.
 func help() {
 	fmt.Println("TODO:")
 }
@@ -113,7 +111,7 @@ func save(traks *[]trak) {
 		log.Fatal(err)
 	}
 	for _, elem := range *traks {
-		_, err = f.WriteString(elem.Store())
+		_, err = f.WriteString(elem.store())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -156,15 +154,14 @@ func printer(traks *[]trak, begInd int) {
 	}
 }
 
-// TODO: documentation about summary
-
-// sumry is a structure to hold given period duration information
+// sumry is a structure to hold duration information about given label+timeframe
 type sumry struct {
-	label    string
-	readable string
-	duration time.Duration
+	label     string
+	timeframe string
+	duration  time.Duration
 }
 
+// mapKeys is a function that extracts and sorts all keys from given map.
 func mapKeys(s map[string]sumry) []string {
 	var re *regexp.Regexp = regexp.MustCompile(fmt.Sprintf("_%v$", label))
 	var keys []string
@@ -178,17 +175,19 @@ func mapKeys(s map[string]sumry) []string {
 	return keys
 }
 
+// sumryPrinter is function that prints given sumry contents in certain format.
 func sumryPrinter(s map[string]sumry, f string) {
 	keys := mapKeys(s)
-	fmt.Println("------------------------------------------------")
+	fmt.Println("________________________________________________")
 	fmt.Printf("%-10v %-10v %-10v\n", "label", f, "duration")
 	fmt.Println("---------- ---------- ----------")
 	for _, k := range keys {
 		v := s[k]
-		fmt.Printf("%-10v %-10v %-10v\n", v.label, v.readable, v.duration)
+		fmt.Printf("%-10v %-10v %-10v\n", v.label, v.timeframe, v.duration)
 	}
 }
 
+// summary is a function that converts traks info into monthly, weekly and daily summary.
 func summary(traks *[]trak, label string) {
 	daily := make(map[string]sumry)
 	monthly := make(map[string]sumry)
@@ -221,7 +220,6 @@ func summary(traks *[]trak, label string) {
 			weekly[weekId] = week
 		}
 	}
-
 	sumryPrinter(monthly, "yyyy-mm")
 	sumryPrinter(weekly, "yyyy/w")
 	sumryPrinter(daily, "yyyy-mm-dd")
@@ -252,7 +250,6 @@ func main() {
 		end(&traks, openLabel)
 	case "summary":
 		summary(&traks, label)
-		//log.Fatal("TODO:")
 	default:
 		help()
 	}
