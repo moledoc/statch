@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-// NOTE: only one open label at a time is allowed
-
 // logfile is a variable that holds the log file path.
 // structure of the file: label start end
 var logfile string = ".trak.csv"
@@ -99,19 +97,18 @@ func logged(label string) ([]trak, int) {
 }
 
 // help is a function that prints help.
-// TODO:
 func help() {
-	fmt.Println("Summary:")
-	fmt.Println("\ttrak is a program that tracks time. NOTE: only one track can be opened at any given time")
-	fmt.Println("\nUsage:")
+	fmt.Println("Summary")
+	fmt.Println("\ttrak is a program that tracks time.\n\tNOTE: only one label tracking (trak) can be opened at any given time.")
+	fmt.Println("\nUsage")
 	fmt.Println("\ttrak ACTION [LABEL]")
-	fmt.Println("\nACTION:")
-	fmt.Println("\tstart\tStarts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed")
-	fmt.Println("\tend\tTODO:")
-	fmt.Println("\tshow\tTODO:")
-	fmt.Println("\tsummary\tTODO:")
-	fmt.Println("\nLABEL:")
-	fmt.Println("\tBy default, label 'all' is used. However, user can specify custom label after ACTION. However, only the first given label is used.")
+	fmt.Println("\nACTION")
+	fmt.Println("\tstart\tStarts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed. After starting a new trak, the last 5 (including started) traks are printed.")
+	fmt.Println("\tend\tEnds the open trak and prints the last 5 traks.")
+	fmt.Println("\tshow\tPrints all logged traks.")
+	fmt.Println("\tsummary\tCalculates monthly, weekly and daily summaries of traks, grouped by labels.")
+	fmt.Println("\nLABEL")
+	fmt.Println("\tBy default label 'all' is used. However, user can specify custom label after ACTION. Only the first given label is used.")
 }
 
 // save is a function that writes traks to the logfile.
@@ -266,6 +263,7 @@ func main() {
 	case "summary":
 		summary(&traks, label)
 	default:
+		fmt.Println("ERROR: Unknown action.\n")
 		help()
 	}
 }
