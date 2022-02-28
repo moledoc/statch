@@ -33,6 +33,7 @@ type trak struct {
 	start    time.Time
 	end      time.Time
 	duration time.Duration
+	comment  string
 }
 
 // store is a method that formats trak into defined storing format.
@@ -41,21 +42,21 @@ func (t trak) store() string {
 	if t.end != compare {
 		saveEnd = strconv.FormatInt(t.end.Unix(), 10)
 	}
-	return fmt.Sprintf("%v,%v,%v\n", t.label, t.start.Unix(), saveEnd)
+	return fmt.Sprintf("%v|%v|%v|%v\n", t.label, t.start.Unix(), saveEnd, t.comment)
 }
 
 // format is a variable that defines the trak printing format.
-var format string = "%-10v %-30v %-30v %-10v"
+var format string = "%-10v %-30v %-30v %-10v %v"
 
 // header is a variable that contains the header labels for printing traks.
-var header string = fmt.Sprintf(format, "label", "start", "end", "duration")
+var header string = fmt.Sprintf(format, "label", "start", "end", "duration", "comment")
 
 // String is a method that converts trak to human readable format.
 func (t trak) String() string {
 	if t.end == compare {
-		return fmt.Sprintf(format, t.label, t.start.String(), "-", "-")
+		return fmt.Sprintf(format, t.label, t.start.String(), "-", "-", t.comment)
 	}
-	return fmt.Sprintf(format, t.label, t.start.String(), t.end.String(), t.duration)
+	return fmt.Sprintf(format, t.label, t.start.String(), t.end.String(), t.duration, t.comment)
 }
 
 // logged is a function that reads and parses the contents of the logfile.
@@ -78,7 +79,7 @@ func logged(label string) ([]trak, int) {
 	}()
 	var i int
 	for scanner.Scan() {
-		contents := strings.Split(scanner.Text(), ",")
+		contents := strings.Split(scanner.Text(), "|")
 		srt, err := strconv.ParseInt(contents[1], 10, 64)
 		if err != nil {
 			log.Fatal(err)
@@ -97,7 +98,7 @@ func logged(label string) ([]trak, int) {
 		if openLabel == -1 && contents[2] == "" {
 			openLabel = i
 		}
-		traks = append(traks, trak{contents[0], srtTime, endTime, duration})
+		traks = append(traks, trak{contents[0], srtTime, endTime, duration, contents[3]})
 		i++
 	}
 	return traks, openLabel
@@ -108,14 +109,16 @@ func help() {
 	fmt.Println("Summary")
 	fmt.Println("\ttrak is a program that tracks time.\n\tNOTE: only one label tracking (trak) can be opened at any given time.")
 	fmt.Println("\nUsage")
-	fmt.Println("\ttrak ACTION [LABEL]")
+	fmt.Println("\ttrak ACTION [LABEL] [COMMENT]")
 	fmt.Println("\nACTION")
 	fmt.Println("\tstart\tStarts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed. After starting a new trak, the last 5 (including started) traks are printed.")
 	fmt.Println("\tend\tEnds the open trak and prints the last 5 traks.")
 	fmt.Println("\tshow\tPrints all logged traks.")
 	fmt.Println("\tsummary\tCalculates monthly, weekly and daily summaries of traks, grouped by labels.")
 	fmt.Println("\nLABEL")
-	fmt.Println("\tBy default label 'all' is used. However, user can specify custom label after ACTION. Only the first given label is used.")
+	fmt.Println("\tBy default label 'all' is used. However, user can specify custom label after ACTION. Only the first given label is used. Character '|' in label is not allowed.")
+	fmt.Println("\nCOMMENT")
+	fmt.Println("\tEvery argument after label is considered to be a part of the comment for corresponding trak. NB! to add comments, label must be provided! Character '|' in comment is not allowed.")
 }
 
 // save is a function that writes traks to the logfile.
@@ -149,8 +152,8 @@ func end(traks *[]trak, openLabel int) {
 
 // start is a function that starts a new insert for given label.
 // If any previous insert was still open for given label, then that insert gets closed.
-func start(label string, traks *[]trak, openLabel int) {
-	*traks = append(*traks, trak{label, time.Unix(time.Now().Unix(), 0), compare, time.Duration(0)})
+func start(label string, traks *[]trak, openLabel int, comment string) {
+	*traks = append(*traks, trak{label, time.Unix(time.Now().Unix(), 0), compare, time.Duration(0), comment})
 	end(traks, openLabel)
 	fmt.Printf("Started '%v'\n", label)
 }
@@ -252,6 +255,12 @@ func main() {
 		}
 		comment = strings.Join(commentComp, " ")
 	}
+	if strings.Contains(label, "|") || strings.Contains(comment, "|") {
+		fmt.Println("ERROR: Usage of character '|' in label or comment is not allowed.\n")
+		help()
+		return
+
+	}
 	traks, openLabel := logged(label)
 	if len(os.Args) == 1 {
 		help()
@@ -267,7 +276,7 @@ func main() {
 		}
 		printer(&traks, 0)
 	case "start":
-		start(label, &traks, openLabel)
+		start(label, &traks, openLabel, comment)
 	case "end":
 		if openLabel == -1 {
 			fmt.Println("No trak to close")

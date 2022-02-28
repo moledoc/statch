@@ -5,14 +5,17 @@ trak is a program that tracks time.
 
 ## Usage
 
-trak ACTION [LABEL]
+trak ACTION [LABEL] [COMMENT]
 
 ## ACTION
 
 start	
 
 ```
-Starts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed. After starting a new trak, the last 5 (including started) traks are printed.
+Starts new trak (time tracking).
+By default label 'all' is used.
+If any trak is opened at the time of starting a new trak, then the previous trak is closed.
+After starting a new trak, the last 5 (including started) traks are printed.
 ```
 
 end	
@@ -35,7 +38,14 @@ Calculates monthly, weekly and daily summaries of traks, grouped by labels.
 
 ## LABEL
 
-By default label 'all' is used. However, user can specify custom label after ACTION. Only the first given label is used.
+By default label 'all' is used.
+However, user can specify custom label after ACTION.
+Only the first given label is used. Character '|' in label is not allowed.
+
+## COMMENT
+
+Every argument after label is considered to be a part of the comment for corresponding trak.
+**NB!** to add comments, label must be provided! Character '|' in comment is not allowed.
 
 ## Author
 
