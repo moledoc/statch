@@ -118,7 +118,7 @@ func help() {
 	fmt.Println("\nLABEL")
 	fmt.Println("\tBy default label 'all' is used. However, user can specify custom label after ACTION. Only the first given label is used. Character '|' in label is not allowed.")
 	fmt.Println("\nCOMMENT")
-	fmt.Println("\tEvery argument after label is considered to be a part of the comment for corresponding trak. NB! to add comments, label must be provided! Character '|' in comment is not allowed.")
+	fmt.Println("\tEvery argument after label is considered to be a part of the comment for corresponding trak. NB! to add comment, label must be provided! Character '|' in comment is not allowed.")
 }
 
 // save is a function that writes traks to the logfile.

@@ -45,7 +45,7 @@ Only the first given label is used. Character '|' in label is not allowed.
 ## COMMENT
 
 Every argument after label is considered to be a part of the comment for corresponding trak.
-**NB!** to add comments, label must be provided! Character '|' in comment is not allowed.
+**NB!** to add comment, label must be provided! Character '|' in comment is not allowed.
 
 ## Author
 
