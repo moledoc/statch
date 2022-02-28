@@ -20,6 +20,10 @@ var logfile string = ".trak.csv"
 // Default trak label value is 'all'.
 var label string = "all"
 
+// comment is a variable that holds the comment value for a trak.
+// Default comment is empty string.
+var comment string
+
 // compare is the default value of time.Time and is used to check if trak end is set or not.
 var compare time.Time
 
@@ -46,8 +50,11 @@ var format string = "%-10v %-30v %-30v %-10v"
 // header is a variable that contains the header labels for printing traks.
 var header string = fmt.Sprintf(format, "label", "start", "end", "duration")
 
-// String is a method that prints trak to human readable format.
+// String is a method that converts trak to human readable format.
 func (t trak) String() string {
+	if t.end == compare {
+		return fmt.Sprintf(format, t.label, t.start.String(), "-", "-")
+	}
 	return fmt.Sprintf(format, t.label, t.start.String(), t.end.String(), t.duration)
 }
 
@@ -233,10 +240,17 @@ func summary(traks *[]trak, label string) {
 	sumryPrinter(daily, "yyyy-mm-dd")
 }
 
-// trak [action] (label)
+// trak [action] (label) (comment)
 func main() {
-	if len(os.Args) > 2 {
+	if len(os.Args) == 3 {
 		label = os.Args[2]
+	}
+	if len(os.Args) > 3 {
+		commentComp := make([]string, len(os.Args)-3)
+		for i := 3; i < len(os.Args); i++ {
+			commentComp[i-3] = os.Args[i]
+		}
+		comment = strings.Join(commentComp, " ")
 	}
 	traks, openLabel := logged(label)
 	if len(os.Args) == 1 {
