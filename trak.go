@@ -14,7 +14,7 @@ import (
 
 // logfile is a variable that holds the log file path.
 // structure of the file: label start end
-var logfile string = ".trak.csv"
+var logfile string
 
 // label is a variable that holds the label value for trak
 // Default trak label value is 'all'.
@@ -245,6 +245,11 @@ func summary(traks *[]trak, label string) {
 
 // trak [action] (label) (comment)
 func main() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	logfile = home + "/.trak.csv"
 	if len(os.Args) == 3 {
 		label = os.Args[2]
 	}
