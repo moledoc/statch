@@ -250,7 +250,7 @@ func main() {
 		log.Fatal(err)
 	}
 	logfile = home + "/.trak.csv"
-	if len(os.Args) == 3 {
+	if len(os.Args) >= 3 {
 		label = os.Args[2]
 	}
 	if len(os.Args) > 3 {
