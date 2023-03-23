@@ -36,6 +36,22 @@ summary
 Calculates monthly, weekly and daily summaries of traks, grouped by labels.
 ```
 
+from %Y-%m-%dT%H:%M:%S
+```
+Starts new trak (time tracking) from given timestamp.
+Recognized format is yyyy-mm-ddTHH:MM:SS. 
+By default label 'all' is used.
+If any trak is opened at the time of starting a new trak,
+then the previous trak is closed.
+After starting a new trak, the last 5 (including started) traks are printed.
+```
+
+to %Y-%m-%dT%H:%M:%S
+```
+Ends the open trak at given timetamp and prints the last 5 traks.
+Recognized format is yyyy-mm-ddTHH:MM:SS.
+```
+
 ## LABEL
 
 By default label 'all' is used.
