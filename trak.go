@@ -111,10 +111,13 @@ func help() {
 	fmt.Println("\nUsage")
 	fmt.Println("\ttrak ACTION [LABEL] [COMMENT]")
 	fmt.Println("\nACTION")
-	fmt.Println("\tstart\tStarts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed. After starting a new trak, the last 5 (including started) traks are printed.")
-	fmt.Println("\tend\tEnds the open trak and prints the last 5 traks.")
+	fmt.Println("\tstart\t\tStarts new trak (time tracking). By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed. After starting a new trak, the last 5 (including started) traks are printed.")
+	fmt.Println("\tend\t\tEnds the open trak and prints the last 5 traks.")
 	fmt.Println("\tshow\tPrints all logged traks.")
 	fmt.Println("\tsummary\tCalculates monthly, weekly and daily summaries of traks, grouped by labels.")
+	fmt.Println()
+	fmt.Println("\tfrom %Y-%m-%dT%H:%M:%S\tStarts new trak (time tracking) from given timestamp. Recognized format is yyyy-mm-ddTHH:MM:SS.  By default label 'all' is used. If any trak is opened at the time of starting a new trak, then the previous trak is closed. After starting a new trak, the last 5 (including started) traks are printed.")
+	fmt.Println("\tto %Y-%m-%dT%H:%M:%S\t\tEnds the open trak at given timetamp and prints the last 5 traks. Recognized format is yyyy-mm-ddTHH:MM:SS.")
 	fmt.Println("\nLABEL")
 	fmt.Println("\tBy default label 'all' is used. However, user can specify custom label after ACTION. Only the first given label is used. Character '|' in label is not allowed.")
 	fmt.Println("\nCOMMENT")
@@ -137,10 +140,10 @@ func save(traks *[]trak) {
 }
 
 // end is a function that closes the last opened insert for corresponding label.
-func end(traks *[]trak, openLabel int) {
+func end(traks *[]trak, openLabel int, tme time.Time) {
 	if openLabel != -1 {
 		cur := (*traks)[openLabel]
-		cur.end = time.Unix(time.Now().Unix(), 0)
+		cur.end = tme
 		cur.duration = cur.end.Sub(cur.start)
 		(*traks)[openLabel] = cur
 		fmt.Printf("Closed '%v'\n", cur.label)
@@ -152,9 +155,9 @@ func end(traks *[]trak, openLabel int) {
 
 // start is a function that starts a new insert for given label.
 // If any previous insert was still open for given label, then that insert gets closed.
-func start(label string, traks *[]trak, openLabel int, comment string) {
-	*traks = append(*traks, trak{label, time.Unix(time.Now().Unix(), 0), compare, time.Duration(0), comment})
-	end(traks, openLabel)
+func start(label string, traks *[]trak, openLabel int, comment string, tme time.Time) {
+	*traks = append(*traks, trak{label, tme, compare, time.Duration(0), comment})
+	end(traks, openLabel, tme)
 	fmt.Printf("Started '%v'\n", label)
 }
 
@@ -243,6 +246,22 @@ func summary(traks *[]trak, label string) {
 	sumryPrinter(daily, "yyyy-mm-dd")
 }
 
+func extractLabel(idx int) {
+	if len(os.Args) > idx {
+		label = os.Args[idx]
+	}
+}
+
+func extractComment(idx int) {
+	if len(os.Args) > idx {
+		commentComp := make([]string, len(os.Args)-idx)
+		for i := idx; i < len(os.Args); i++ {
+			commentComp[i-idx] = os.Args[i]
+		}
+		comment = strings.Join(commentComp, " ")
+	}
+}
+
 // trak [action] (label) (comment)
 func main() {
 	home, err := os.UserHomeDir()
@@ -250,16 +269,8 @@ func main() {
 		log.Fatal(err)
 	}
 	logfile = home + "/.trak.csv"
-	if len(os.Args) >= 3 {
-		label = os.Args[2]
-	}
-	if len(os.Args) > 3 {
-		commentComp := make([]string, len(os.Args)-3)
-		for i := 3; i < len(os.Args); i++ {
-			commentComp[i-3] = os.Args[i]
-		}
-		comment = strings.Join(commentComp, " ")
-	}
+	extractLabel(2)
+	extractComment(3)
 	if strings.Contains(label, "|") || strings.Contains(comment, "|") {
 		fmt.Println("ERROR: Usage of character '|' in label or comment is not allowed.\n")
 		help()
@@ -276,20 +287,33 @@ func main() {
 		help()
 	case "show":
 		if len(traks) == 0 {
-			fmt.Println("Nothing logged yet")
-			return
+			log.Fatal("Nothing logged yet")
 		}
 		printer(&traks, 0)
 	case "start":
-		start(label, &traks, openLabel, comment)
+		start(label, &traks, openLabel, comment, time.Now())
 	case "end":
 		if openLabel == -1 {
-			fmt.Println("No trak to close")
-			return
+			log.Fatal("No trak to close")
 		}
-		end(&traks, openLabel)
+		end(&traks, openLabel, time.Now())
 	case "summary":
 		summary(&traks, label)
+	case "from":
+		tme, err := time.Parse("2006-01-02T15:04:05", label)
+		if err != nil {
+			log.Fatal("Invalid timestamp format, wanted yyyy-mm-ddTHH:MM:SS")
+		}
+		label = "all"
+		extractLabel(3)
+		extractComment(4)
+		start(label, &traks, openLabel, comment, tme)
+	case "to":
+		tme, err := time.Parse("2006-01-02T15:04:05", label)
+		if err != nil {
+			log.Fatal("Invalid timestamp format, wanted yyyy-mm-ddTHH:MM:SS")
+		}
+		end(&traks, openLabel, tme)
 	default:
 		fmt.Println("ERROR: Unknown action.\n")
 		help()
