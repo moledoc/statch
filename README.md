@@ -7,7 +7,7 @@ trak is a program that tracks time.
 
 trak ACTION [LABEL] [COMMENT]
 
-## ACTION
+### ACTION
 
 start	
 
@@ -52,16 +52,35 @@ Ends the open trak at given timetamp and prints the last 5 traks.
 Recognized format is yyyy-mm-ddTHH:MM:SS.
 ```
 
-## LABEL
+### LABEL
 
 By default label 'all' is used.
 However, user can specify custom label after ACTION.
 Only the first given label is used. Character '|' in label is not allowed.
 
-## COMMENT
+### COMMENT
 
 Every argument after label is considered to be a part of the comment for corresponding trak.
 **NB!** to add comment, label must be provided! Character '|' in comment is not allowed.
+
+## Getting started
+
+Easiest way to get started is to clone the repository
+
+```sh
+git clone https://github.com/moledoc/trak.go
+cd trak
+```
+
+and `build` or `install` the application, ie
+
+```sh
+go build; ./trak
+```
+or 
+```sh
+go install; trak
+```
 
 ## Author
 
